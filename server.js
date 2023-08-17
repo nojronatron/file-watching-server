@@ -5,7 +5,21 @@ import 'dotenv/config';
 
 // call the file watcher
 const filePath = process.env.FILE_PATH;
-const watcher = new Watcher(filePath);
+const watcherOptions = {
+  debounce: 300,
+  depth: 1,
+  limit: 10,
+  ignoreInitial: false,
+  native: true,
+  persistent: true,
+  pollingInterval: 3000,
+  pollingTimeout: 20000,
+  recursive: false,
+  renameDetection: false,
+  renameTimeout: 1250,
+};
+
+var watcher = new Watcher();
 
 const PORT = process.env.PORT || 6002;
 
@@ -15,12 +29,27 @@ server.get('/', (req, res, next) => {
 });
 
 server.get('/start', (req, res, next) => {
-  watcher.on('all', (event, targetPath, targetPathNext) => {
-    console.log('Watcher event:', event);
-    console.log('Target path:', targetPath);
-    console.log('Target path next:', targetPathNext);
-  });
+  watcher = new Watcher(filePath, watcherOptions);
   console.log('Called file watcher START.');
+
+  watcher.on('error', (err) => {
+    console.error('Error:', err);
+  });
+  watcher.on('ready', () => {
+    console.log('File watcher ready.');
+  });
+  watcher.on('close', () => {
+    console.log('File watcher closed.');
+  });
+  watcher.on('add', (filePath) => {
+    console.log('File added:', filePath);
+    // todo: call function to process file
+  });
+  watcher.on('unlink', (filePath) => {
+    console.log('File removed:', filePath);
+    // todo: determine what to do when a file is removed (or renamed)
+  });
+
   res.send('File watcher started.');
 });
 
